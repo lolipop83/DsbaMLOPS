@@ -1,17 +1,15 @@
 from fastapi import FastAPI
+from validation import validate_inputs
+from score import get_score
 
 app = FastAPI()
 
-@app.get("/")
-def read_root():
-    return {"Hello Word" }
+@app.get("/score/{address_id}")
 
-
-def myAPI(address_id : int, surface: int, nb_room: int):
-    if address_id.is_integer :
-        if surface.is_integer:
-            if nb_room.is_integer:
-                return myScore(address_id, surface,nb_room)
-            
-    
-    
+def house_scoring(address_id: int,  surface: int, nb_room: int):
+    validate_inputs(address_id=address_id, surface=surface, nb_room=nb_room)  
+    result = get_score(address_id=address_id, surface=surface, nb_room=nb_room)  
+    return {"score": result}   
+ 
+#http://127.0.0.1:8000/docs
+#http://127.0.0.1:8000/score/4?surface=5&nb_room=6
