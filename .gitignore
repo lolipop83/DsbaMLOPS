@@ -1,6 +1,6 @@
 # .gitignore
 
-# Ignorer l'environnement virtuel (très important !)
+# Ignorer l'environnement virtuel
 venv/
 .env
 
