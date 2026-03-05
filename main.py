@@ -1,15 +1,15 @@
+# main.py
 from fastapi import FastAPI
+from ui import router as ui_router
 from validation import validate_inputs
-from score import get_score
+from score import score_price
 
 app = FastAPI()
+app.include_router(ui_router)
 
-@app.get("/score/{address_id}")
 
-def house_scoring(address_id: int,  surface: int, nb_room: int):
-    validate_inputs(address_id=address_id, surface=surface, nb_room=nb_room)  
-    result = get_score(address_id=address_id, surface=surface, nb_room=nb_room)  
-    return {"score": result}   
- 
+@app.get("/score")
+def get_score(surface: int, nb_room: int, price: float) -> dict:
+    validate_inputs(surface=surface, nb_room=nb_room, price=price)
+    return score_price(surface=surface, nb_room=nb_room, price=price)
 #http://127.0.0.1:8000/docs
-#http://127.0.0.1:8000/score/4?surface=5&nb_room=6
