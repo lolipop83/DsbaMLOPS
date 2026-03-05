@@ -1,14 +1,20 @@
-# .gitignore
-
-# Ignorer l'environnement virtuel (très important !)
-venv/
-.env
-
-# Ignorer les fichiers compilés par Python
+# Python
 __pycache__/
-*.py[cod]
+*.pyc
 
-# Ignorer les fichiers système ou IDE
-.DS_Store
+# Virtual envs
+.venv/
+venv/
+
+# OS / IDE
 .vscode/
-.idea/
+.DS_Store
+
+# Data / exports
+*.csv
+
+# Model artifacts
+artifacts/*
+!artifacts/model.json
+
+

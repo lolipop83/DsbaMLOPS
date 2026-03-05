@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Price Adequacy — Toulon (DVF)</title>
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+
+    <style>
+      :root{
+        --bg1:#0b1020;
+        --bg2:#0b1b3a;
+        --card: rgba(255,255,255,.08);
+        --border: rgba(255,255,255,.14);
+        --soft: rgba(255,255,255,.78);
+
+        --pink:#ff4fd8;
+        --purple:#7c3aed;
+        --cyan:#22d3ee;
+        --lime:#a3ff12;
+        --orange:#ff9f1c;
+        --red:#ff3b3b;
+      }
+
+      body{
+        background:
+          radial-gradient(900px 500px at 10% 10%, rgba(34,211,238,.25), transparent 60%),
+          radial-gradient(900px 500px at 90% 20%, rgba(255,79,216,.18), transparent 60%),
+          radial-gradient(900px 500px at 30% 90%, rgba(124,58,237,.20), transparent 60%),
+          linear-gradient(180deg, var(--bg1), var(--bg2));
+        color: white;
+      }
+
+      .text-soft{ color: var(--soft); }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+      .glass{
+        background: var(--card);
+        border: 1px solid var(--border);
+        backdrop-filter: blur(10px);
+        border-radius: 18px;
+      }
+
+      .glow{
+        box-shadow:
+          0 0 0 1px rgba(255,255,255,.08) inset,
+          0 18px 60px rgba(0,0,0,.45),
+          0 0 50px rgba(34,211,238,.10);
+      }
+
+      .nav-grad{
+        background:
+          linear-gradient(90deg, rgba(34,211,238,.20), rgba(124,58,237,.18), rgba(255,79,216,.18));
+        border-bottom: 1px solid var(--border);
+        backdrop-filter: blur(12px);
+      }
+
+      .brand-dot{
+        width: 10px; height: 10px; border-radius: 99px;
+        background: linear-gradient(90deg, var(--cyan), var(--pink));
+        box-shadow: 0 0 20px rgba(255,79,216,.4);
+        display:inline-block; margin-right: 10px;
+      }
+
+      .btn-grad{
+        border: 0;
+        color: #081022;
+        font-weight: 700;
+        background: linear-gradient(90deg, var(--cyan), var(--pink));
+        box-shadow: 0 10px 30px rgba(255,79,216,.18);
+      }
+      .btn-grad:hover{ filter: brightness(1.05); transform: translateY(-1px); }
+
+      .form-control, .form-select{
+        background: rgba(0,0,0,.35) !important;
+        border: 1px solid rgba(255,255,255,.16) !important;
+        color: white !important;
+      }
+      .form-control:focus{
+        border-color: rgba(34,211,238,.65) !important;
+        box-shadow: 0 0 0 .25rem rgba(34,211,238,.18) !important;
+      }
+
+      .pill{
+        border-radius: 999px;
+        padding: .5rem .8rem;
+        border: 1px solid rgba(255,255,255,.18);
+        background: rgba(0,0,0,.25);
+      }
+
+      .stat-card{
+        background: rgba(0,0,0,.30);
+        border: 1px solid rgba(255,255,255,.14);
+        border-radius: 16px;
+      }
+      .stat{
+        font-weight: 800;
+        font-size: 1.25rem;
+        letter-spacing: .2px;
+      }
+      .sub{ font-size: .82rem; opacity: .86; }
+
+      .accent-cyan{ box-shadow: 0 0 0 1px rgba(34,211,238,.12) inset, 0 0 40px rgba(34,211,238,.12); }
+      .accent-pink{ box-shadow: 0 0 0 1px rgba(255,79,216,.10) inset, 0 0 40px rgba(255,79,216,.10); }
+      .accent-purple{ box-shadow: 0 0 0 1px rgba(124,58,237,.10) inset, 0 0 40px rgba(124,58,237,.10); }
+
+      .badge-fair{ background: rgba(163,255,18,.18) !important; border: 1px solid rgba(163,255,18,.40) !important; color: #d8ff9f !important; }
+      .badge-under{ background: rgba(255,159,28,.18) !important; border: 1px solid rgba(255,159,28,.40) !important; color: #ffd29a !important; }
+      .badge-over{ background: rgba(255,59,59,.18) !important; border: 1px solid rgba(255,59,59,.40) !important; color: #ffb1b1 !important; }
+      .badge-unk{ background: rgba(255,255,255,.12) !important; border: 1px solid rgba(255,255,255,.20) !important; color: #fff !important; }
+
+      .divider{ border-top: 1px solid rgba(255,255,255,.12); }
+
+      .fade-in { animation: fade .2s ease-out; }
+      @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+  </head>
+
+  <body>
+    <nav class="navbar nav-grad">
+      <div class="container py-2 d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+          <span class="brand-dot"></span>
+          <div>
+            <div class="fw-bold">Price Adequacy <span class="text-soft fw-semibold">· Toulon (DVF)</span></div>
+            <div class="text-soft small">Appartement · 01/05/2024 → 30/06/2025</div>
+          </div>
+        </div>
+        <a class="btn btn-sm btn-outline-light"
+           href="https://www.pricehubble.com/fr/blog/base-dvf-ventes-immobilieres-france"
+           target="_blank" rel="noopener noreferrer">
+          Source DVF
+        </a>
+      </div>
+    </nav>
+
+    <div class="container pb-5">
+        <div class="glass p-4 mt-4 accent-purple">
+            <div class="fw-bold h5 mb-2">Pourquoi ce projet ?</div>
+            <p class="text-soft mb-0">
+            Créé par <b>Lolita ABOA</b> comme outil d'aide à la décision pour son prochain investissement
+            dans la ville où elle a grandi !
+            <a href="https://lolitadiamant.wixsite.com/data-en-herbe" target="_blank" rel="noopener noreferrer" class="text-white fw-semibold ms-1">
+                Voir son profil
+            </a>
+            </p>
+        </div>
+        </div>
+
+    <main class="container my-4">
+      <div class="row g-4">
+        <div class="col-lg-6">
+          <div class="glass glow p-4">
+            <h1 class="h3 fw-bold mb-2">Évaluer l’adéquation du prix</h1>
+            <p class="text-soft mb-4">
+              Entrez les caractéristiques. Le service estime un <b>prix attendu</b> et explique l’écart (en € et en %).
+            </p>
+
+            <form id="form" class="row g-3">
+              <div class="col-12">
+                <label class="form-label text-soft">Prix (€)</label>
+                <input id="price" class="form-control form-control-lg" type="number" min="1" value="180000" required />
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label text-soft">Surface (m²)</label>
+                <input id="surface" class="form-control" type="number" min="1" value="50" required />
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label text-soft">Nombre de pièces</label>
+                <input id="nb_room" class="form-control" type="number" min="1" value="2" required />
+              </div>
+
+              <div class="col-12 d-flex align-items-center gap-3 mt-2">
+                <button id="btn" class="btn btn-grad btn-lg px-4" type="submit">
+                  <span id="btnText">Calculer</span>
+                  <span id="btnSpin" class="spinner-border spinner-border-sm ms-2 d-none" aria-hidden="true"></span>
+                </button>
+                <span id="status" class="text-soft small"></span>
+              </div>
+
+              <div id="errBox" class="col-12 d-none">
+                <div class="alert alert-danger mb-0">
+                  <div class="fw-semibold mb-1">Erreur</div>
+                  <div id="errText" class="small mono"></div>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <div class="glass p-4 mt-4 accent-purple">
+            <div class="d-flex justify-content-between align-items-start gap-3">
+              <div>
+                <div class="fw-semibold">Configuration dataset (DVF)</div>
+                <div class="text-soft small">Paramètres utilisés pour constituer la base d’entraînement</div>
+              </div>
+              <div class="pill mono small">n_train: <span id="nTrain">—</span></div>
+            </div>
+
+            <div class="row row-cols-1 row-cols-md-2 g-3 mt-1">
+              <div class="col">
+                <div class="stat-card p-3">
+                  <div class="text-soft sub">Département</div>
+                  <div class="fw-semibold">83 – Var</div>
+                </div>
+              </div>
+              <div class="col">
+                <div class="stat-card p-3">
+                  <div class="text-soft sub">Commune</div>
+                  <div class="fw-semibold">Toulon</div>
+                </div>
+              </div>
+              <div class="col">
+                <div class="stat-card p-3">
+                  <div class="text-soft sub">Section cadastrale</div>
+                  <div class="fw-semibold">CO</div>
+                </div>
+              </div>
+              <div class="col">
+                <div class="stat-card p-3">
+                  <div class="text-soft sub">Parcelle</div>
+                  <div class="fw-semibold">Non renseignée </div>
+                </div>
+              </div>
+              <div class="col">
+                <div class="stat-card p-3">
+                  <div class="text-soft sub">Période mutations</div>
+                  <div class="fw-semibold">01/05/2024 → 30/06/2025</div>
+                </div>
+              </div>
+              <div class="col">
+                <div class="stat-card p-3">
+                  <div class="text-soft sub">Filtre</div>
+                  <div class="fw-semibold">type_local = Appartement</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="divider my-4"></div>
+            <div class="text-soft small">
+              Astuce : teste <span class="mono">price</span> pour voir passer le label en <span class="mono">underpriced / fair / overpriced</span>.
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-6">
+          <div id="result" class="glass glow p-4 d-none fade-in accent-cyan">
+            <div class="d-flex justify-content-between align-items-start gap-3">
+              <div>
+                <div class="text-soft small">Résumé</div>
+                <div id="summary" class="h4 fw-bold mb-1"></div>
+                <div class="text-soft small">Plus le score est proche de 1, plus le prix est cohérent.</div>
+              </div>
+              <div class="text-end">
+                <div id="labelBadge" class="pill badge-unk text-uppercase fw-bold">—</div>
+                <div class="mt-2 mono small text-soft">score: <span id="score">—</span></div>
+              </div>
+            </div>
+
+            <div class="divider my-4"></div>
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="stat-card p-3 accent-pink">
+                  <div class="text-soft sub">Prix attendu</div>
+                  <div class="stat" id="expected">—</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="stat-card p-3">
+                  <div class="text-soft sub">Différence</div>
+                  <div class="stat" id="diff">—</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="stat-card p-3">
+                  <div class="text-soft sub">Prix/m²</div>
+                  <div class="stat" id="ppsqm">—</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="stat-card p-3">
+                  <div class="text-soft sub">Attendu/m²</div>
+                  <div class="stat" id="expPpsqm">—</div>
+                </div>
+              </div>
+              <div class="col-12">
+                <div class="stat-card p-3">
+                  <div class="text-soft sub">Ratio (prix / attendu)</div>
+                  <div class="stat mono" id="ratio">—</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="divider my-4"></div>
+
+            <div class="text-soft">
+              <div class="fw-semibold mb-1">Méthode (simple)</div>
+              <ul class="mb-0">
+                <li>Objectif : estimer un <b>prix attendu</b> avec surface + pièces.</li>
+                <li>On prend le <b>log</b> du prix pour comparer des écarts en <b>%</b> plutôt qu’en euros bruts.</li>
+                <li>Le label dépend du ratio (seuils 0.9 / 1.1).</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="glass p-4 mt-4 accent-pink">
+            <div class="text-soft small">Exemple API</div>
+            <div class="fw-semibold">Endpoint</div>
+            <div class="mono text-soft mt-1">/score?surface=50&nb_room=2&price=180000</div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
+
+    <script>
+      const form = document.getElementById("form");
+      const btn = document.getElementById("btn");
+      const btnText = document.getElementById("btnText");
+      const btnSpin = document.getElementById("btnSpin");
+      const statusEl = document.getElementById("status");
+
+      const errBox = document.getElementById("errBox");
+      const errText = document.getElementById("errText");
+
+      const resultEl = document.getElementById("result");
+      const summaryEl = document.getElementById("summary");
+      const labelBadge = document.getElementById("labelBadge");
+      const scoreEl = document.getElementById("score");
+      const expectedEl = document.getElementById("expected");
+      const diffEl = document.getElementById("diff");
+      const ratioEl = document.getElementById("ratio");
+      const ppsqmEl = document.getElementById("ppsqm");
+      const expPpsqmEl = document.getElementById("expPpsqm");
+      const nTrainEl = document.getElementById("nTrain");
+
+      function fmtEUR0(x) {
+        if (!isFinite(x)) return String(x);
+        return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(x);
+      }
+      function fmtEUR2(x) {
+        if (!isFinite(x)) return String(x);
+        return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 2 }).format(x);
+      }
+      function fmtPct1(x) {
+        if (!isFinite(x)) return String(x);
+        return new Intl.NumberFormat("fr-FR", { style: "percent", maximumFractionDigits: 1 }).format(x);
+      }
+
+      function setLoading(on) {
+        btn.disabled = on;
+        btnText.textContent = on ? "Calcul..." : "Calculer";
+        btnSpin.classList.toggle("d-none", !on);
+      }
+
+      function setLabelBadge(label) {
+        labelBadge.textContent = label;
+        labelBadge.classList.remove("badge-fair", "badge-under", "badge-over", "badge-unk");
+        if (label === "fair") labelBadge.classList.add("badge-fair");
+        else if (label === "underpriced") labelBadge.classList.add("badge-under");
+        else if (label === "overpriced") labelBadge.classList.add("badge-over");
+        else labelBadge.classList.add("badge-unk");
+      }
+
+      async function fetchWithTimeout(url, ms) {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), ms);
+        try { return await fetch(url, { signal: ctrl.signal }); }
+        finally { clearTimeout(t); }
+      }
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        errBox.classList.add("d-none");
+        resultEl.classList.add("d-none");
+        statusEl.textContent = "";
+        setLoading(true);
+
+        const surface = Number(document.getElementById("surface").value);
+        const nbRoom = Number(document.getElementById("nb_room").value);
+        const price = Number(document.getElementById("price").value);
+
+        const url = `/score?surface=${encodeURIComponent(surface)}&nb_room=${encodeURIComponent(nbRoom)}&price=${encodeURIComponent(price)}`;
+
+        try {
+          const r = await fetchWithTimeout(url, 10000);
+          const data = await r.json();
+          if (!r.ok) throw new Error(JSON.stringify(data));
+
+          const label = String(data.label);
+          const expected = Number(data.expected_price);
+          const ratio = Number(data.price_ratio);
+          const score = Number(data.score);
+          const nTrain = data.model_n_train ?? "—";
+
+          const diffAbs = price - expected;
+          const diffPct = expected > 0 ? diffAbs / expected : Infinity;
+
+          const ppsqm = surface > 0 ? price / surface : Infinity;
+          const expPpsqm = surface > 0 ? expected / surface : Infinity;
+
+          summaryEl.textContent = `D’après les caractéristiques, ce logement est ${label}.`;
+          setLabelBadge(label);
+
+          scoreEl.textContent = score.toFixed(3);
+          expectedEl.textContent = fmtEUR0(expected);
+          diffEl.textContent = `${fmtEUR0(diffAbs)} (${fmtPct1(diffPct)})`;
+          ratioEl.textContent = ratio.toFixed(3);
+
+          ppsqmEl.textContent = `${fmtEUR2(ppsqm)} / m²`;
+          expPpsqmEl.textContent = `${fmtEUR2(expPpsqm)} / m²`;
+
+          nTrainEl.textContent = String(nTrain);
+
+          resultEl.classList.remove("d-none");
+          statusEl.textContent = "OK";
+        } catch (err) {
+          statusEl.textContent = "Erreur";
+          errText.textContent = err?.name === "AbortError"
+            ? "Timeout: l’API n’a pas répondu en 10 secondes."
+            : String(err);
+          errBox.classList.remove("d-none");
+        } finally {
+          setLoading(false);
+        }
+      });
+    </script>
+  </body>
+</html>
