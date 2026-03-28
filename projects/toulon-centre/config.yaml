@@ -1,0 +1,34 @@
+# Projet : Toulon — Centre-ville
+project_name: "Price Adequacy — Toulon (DVF)"
+description: "Estimation du prix d'un appartement dans le centre-ville de Toulon (sections cadastrales sélectionnées, ≈ 15 min à pied de la gare)."
+
+location:
+  ville: Toulon
+  departement: "83"
+  departement_nom: Var
+  zone: "Centre-ville (section cadastrale CO)"
+  section_cadastrale: "CO"
+
+data:
+  source: "DVF — Demande de Valeur Foncière"
+  type_local: Appartement
+  date_debut: "2024-05-01"
+  date_fin: "2025-06-30"
+  csv_filename: "Base_DVF_Toulon.csv"
+  csv_separator: ";"
+
+# Bornes de validation métier
+validation:
+  surface_min: 9
+  surface_max: 300
+  nb_room_min: 1
+  nb_room_max: 10
+  price_min: 20000
+  price_max: 3000000
+  price_per_sqm_min: 500
+  price_per_sqm_max: 15000
+
+# Seuils du label
+labeling:
+  underpriced_below: 0.9
+  overpriced_above: 1.1

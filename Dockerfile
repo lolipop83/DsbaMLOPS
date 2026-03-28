@@ -5,13 +5,18 @@ WORKDIR /app
 COPY requirements.txt .
 RUN python -m pip install --no-cache-dir -r requirements.txt
 
-COPY main.py score.py validation.py README.md ./
-COPY artifacts/model.json ./artifacts/model.json
+COPY main.py model.py model_loader.py project_config.py score.py validation.py ui.py ./
+COPY config.yaml ./
+COPY projects ./projects
 COPY static ./static
 
-ENV MODEL_PATH=/app/artifacts/model.json
-
-RUN python -c "import json, pathlib; p=pathlib.Path('/app/artifacts/model.json'); assert p.exists() and p.stat().st_size>0; json.loads(p.read_text(encoding='utf-8'))"
+RUN python -c "\
+from project_config import get_project_dir; \
+import json, pathlib; \
+p = get_project_dir() / 'model.json'; \
+assert p.exists() and p.stat().st_size > 0; \
+d = json.loads(p.read_text(encoding='utf-8')); \
+print(f'OK: {p}  (n_train={d.get(\"n_train\")}, version={d.get(\"version\", \"?\")})')"
 
 EXPOSE 8000
 CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
