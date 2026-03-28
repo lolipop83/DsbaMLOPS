@@ -1,0 +1,18 @@
+# 1. Créer le venv
+python -m venv .venv
+
+# 2. Activer
+source .venv/bin/activate          # Linux / macOS
+.\.venv\Scripts\Activate.ps1       # Windows PowerShell
+
+# 3. Installer les dépendances
+python -m pip install -r requirements.txt
+python -m pip install -r requirements-train.txt
+
+# 4. Entraîner le modèle (le CSV est trouvé tout seul)
+python train_model.py
+
+# 5. Lancer
+python -m uvicorn main:app --reload --port 8000
+
+run : http://127.0.0.1:8001/

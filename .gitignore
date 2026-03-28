@@ -10,11 +10,10 @@ venv/
 .vscode/
 .DS_Store
 
-# Data / exports
+# Data
 *.csv
 
-# Model artifacts
-artifacts/*
-!artifacts/model.json
-
-
+# Modèles versionnés (archivage local uniquement)
+# Seul model.json (modèle actif) est commité.
+projects/*/model_*.json
+projects/*/model_log.jsonl

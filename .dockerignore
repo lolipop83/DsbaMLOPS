@@ -4,3 +4,16 @@ __pycache__
 .git
 .vscode
 .env
+
+# données (entraînement uniquement)
+*.csv
+projects/*/*.csv
+
+# modèles versionnés (archivage local)
+projects/*/model_*.json
+projects/*/model_log.jsonl
+
+# fichiers de dev (pas besoin au runtime)
+requirements-train.txt
+train_model.py
+README.md
