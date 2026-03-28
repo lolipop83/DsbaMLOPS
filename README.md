@@ -1,433 +1,209 @@
-# Mini-plateforme MLOps — Estimation de prix immobilier (DVF)
+# Outil d’aide à la décision — Adéquation du prix d’un appartement
 
-## Vue d’ensemble
-Ce projet implémente une **mini-plateforme MLOps** de scoring immobilier à partir des données **DVF**.
+## Contexte
+Ce projet propose une **mini-plateforme MLOps** de scoring immobilier.
 
-L’objectif n’est pas de coder un cas ad hoc “en dur”, mais de proposer un **outil réutilisable** :
-- une **API FastAPI** pour scorer un bien,
-- une **UI web statique** pour saisir les caractéristiques,
-- un **pipeline d’entraînement offline** pour générer un artifact de modèle,
-- une **organisation par projets** pour gérer plusieurs villes / zones **sans modifier le code**.
+Le cas de démonstration fourni concerne **Toulon centre-ville**, dans une zone d’intérêt définie via une **sélection de section cadastrale** (environ **15 minutes max à pied de la gare**).
 
-Le cas livré dans ce dépôt est un **projet de démonstration** : `toulon-centre`.
+L’objectif est de répondre rapidement à une question simple mais critique :  
+*“le prix demandé est-il cohérent avec les caractéristiques du bien, dans cette zone ?”*
 
----
+L’approche a été volontairement **simple, légère et efficace**, avec un **impact business immédiat** : une estimation de prix attendu, un écart en %, et un label lisible.
 
-## Principe
-L’utilisateur saisit :
-- le **prix** du bien,
-- la **surface**,
-- le **nombre de pièces**.
-
-Le système retourne :
-- un **prix attendu** (`expected_price`),
-- un **ratio** `price_ratio = price / expected_price`,
-- un **label** :
-  - `underpriced`
-  - `fair`
-  - `overpriced`
-- un **score** compris entre 0 et 1, où une valeur proche de 1 signifie que le prix saisi est proche du prix attendu par le modèle.
-
-L’interface affiche aussi :
-- un résumé lisible,
-- les explications de calcul,
-- les métadonnées du projet actif,
-- un **sélecteur de projet** pour changer de ville / zone quand plusieurs projets sont configurés.
+> Le projet de démonstration actuel est **Toulon**, mais la structure du code permet de reproduire la même démarche sur **d’autres villes / zones** via un **projet configuré**, sans modifier le code métier.
 
 ---
 
-## Architecture de la plateforme
+## Données utilisées (source officielle DVF)
+Les données proviennent de la base officielle **DVF — Demande de Valeur Foncière** (transactions immobilières enregistrées).
 
-### Séparation des responsabilités
-- `main.py` : orchestre l’API FastAPI et expose les endpoints.
-- `ui.py` : sert l’interface web statique.
-- `validation.py` : valide les entrées utilisateur.
-- `score.py` : contient la logique de scoring uniquement.
-- `model.py` : définit la structure du modèle (`PriceModel`).
-- `model_loader.py` : charge le modèle depuis le disque.
-- `project_config.py` : gère la configuration plateforme + projet.
-- `train_model.py` : entraîne le modèle offline et versionne les artifacts.
+Référence grand public (présentation DVF) :  
+https://www.pricehubble.com/fr/blog/base-dvf-ventes-immobilieres-france
 
-Cette séparation simule une base de code plus maintenable et plus proche d’un projet “plateforme” qu’un simple notebook d’analyse.
+### Périmètre & filtres du projet de démonstration
+L’extraction DVF a été filtrée selon :
+- Département : **83 (Var)**
+- Commune : **Toulon**
+- **Section cadastrale sélectionnée** (centre-ville)
+- `type_local = Appartement` (le reste est ignoré)
 
----
+### Fenêtre temporelle (pourquoi uniquement la dernière année ?)
+Même si DVF permet de remonter plus loin (jusqu’à ~2020 et avant), nous avons choisi de **n’utiliser que la dernière année disponible** :
+- pour limiter les effets de rupture liés à la période **COVID** et aux changements de dynamique de marché,
+- pour obtenir un signal **plus représentatif du marché actuel** et exploitable pour une décision imminente.
 
-## Organisation par projets
-La plateforme est conçue autour d’un dossier `projects/` :
+Dans ce projet, la période utilisée est :
+- **01/05/2024 → 30/06/2025**
 
-```text
-projects/
-└── <nom-du-projet>/
-    ├── config.yaml
-    ├── model.json
-    ├── model_<version>.json
-    ├── model_log.jsonl
-    └── <csv_dvf>.csv
-```
-
-Chaque projet contient :
-- sa **configuration métier**,
-- ses **données DVF**,
-- son **modèle actif** (`model.json`),
-- son **historique de modèles** (`model_<version>.json`),
-- son **journal d’entraînement** (`model_log.jsonl`).
-
-### Projet actif
-Le projet actif par défaut est défini dans `config.yaml` à la racine :
-
-```yaml
-active_project: toulon-centre
-```
-
-Il peut aussi être surchargé via une variable d’environnement :
-
-```bash
-ACTIVE_PROJECT=toulon-centre
-```
-
-### Réutilisabilité
-Pour ajouter une nouvelle ville ou zone, il suffit de :
-1. créer un nouveau dossier sous `projects/`,
-2. y placer un `config.yaml`,
-3. y placer le CSV DVF correspondant,
-4. lancer `train_model.py`.
-
-**Aucun changement de code n’est nécessaire.**
+### Variables DVF exploitées
+Colonnes utilisées pour l’estimation :
+- `valeur_fonciere` (prix de transaction)
+- `surface_reelle_bati` (surface)
+- `nombre_pieces_principales` (nombre de pièces)
+- `type_local` (filtré à Appartement)
 
 ---
 
-## Projet de démonstration livré
-Le dépôt contient un projet de démonstration :
+## Ce que fait l’outil
+L’utilisateur renseigne :
+- **Prix (€)**
+- **Surface (m²)**
+- **Nombre de pièces**
 
-- **Nom** : `toulon-centre`
-- **Ville** : Toulon
-- **Département** : 83 (Var)
-- **Zone** : centre-ville, section cadastrale `CO`
-- **Type de bien** : `Appartement`
-- **Période** : du `2024-05-01` au `2025-06-30`
+L’API calcule puis renvoie :
+- un **prix attendu** (`expected_price`) estimé à partir de ventes DVF comparables,
+- un **ratio** (`price_ratio = price / expected_price`) et un **écart** (en € et en % dans l’UI),
+- un **label** simple :
+  - `underpriced` (prix sous l’attendu),
+  - `fair` (prix cohérent),
+  - `overpriced` (prix au-dessus de l’attendu),
+- un **score** ∈ [0,1] (plus proche de 1 = plus proche du prix attendu).
 
-Cette spécialisation appartient au **contenu du projet** (`projects/toulon-centre/config.yaml`), pas au cœur de la plateforme.
+L’interface web affiche :
+- un **résumé** (“D’après les caractéristiques : ce logement est …”),
+- la section **Why** (prix attendu, écart en €, écart en %, prix/m²),
+- la **méthode** et la **source DVF**.
 
----
+L’API principale est :
 
-## Données
-Source utilisée :
-- **DVF — Demande de Valeur Foncière**
+`GET /score?surface=...&nb_room=...&price=...&project=...`
 
-Présentation grand public :
-- PriceHubble : https://www.pricehubble.com/fr/blog/base-dvf-ventes-immobilieres-france
-
-### Variables exploitées
-Le modèle utilise les colonnes suivantes :
-- `valeur_fonciere`
-- `surface_reelle_bati`
-- `nombre_pieces_principales`
-- `type_local`
-
-### Pourquoi une fenêtre récente ?
-Le projet de démonstration s’appuie sur une période récente afin de :
-- limiter les effets de rupture de marché,
-- éviter de mélanger des périodes moins représentatives,
-- conserver un signal proche du marché actuel.
+Le paramètre `project` permet de sélectionner un **projet configuré** (par défaut : le projet actif défini dans la configuration).
 
 ---
 
-## Modèle
-Le modèle est volontairement simple et interprétable :
+## Méthode (maths, version courte et compréhensible)
+### Modèle calibré sur de vraies ventes
+Les paramètres du modèle (**b0, b1, b2**) ainsi que la variabilité **σ** ne sont pas choisis arbitrairement :
+ils sont **estimés automatiquement** à partir de **transactions DVF réelles** (sur la zone et la période sélectionnées).
 
-```text
-log(prix) = b0 + b1 * log(surface) + b2 * nb_pieces
-```
+Concrètement :
+- `train_model.py` lit le CSV DVF filtré,
+- ajuste les coefficients par régression sur `log(prix)`,
+- calcule `σ` à partir de la dispersion observée (résidus),
+- sauvegarde le modèle entraîné dans un artifact JSON,
+- l’API charge ensuite ce fichier pour scorer (inférence).
 
-### Pourquoi le log ?
-Le logarithme du prix permet de raisonner en **écarts relatifs** plutôt qu’en écarts absolus.
-En immobilier, une différence de 20 000 € n’a pas le même sens selon que le bien vaut 100 000 € ou 500 000 €.
+### Pourquoi utiliser le log du prix ?
+On utilise `log(prix)` plutôt que `prix` car en immobilier on raisonne souvent en **pourcentages** :
+- +20 000€ n’a pas le même sens sur 100 000€ que sur 500 000€.
+Le log permet au modèle de mieux capter ces **écarts relatifs** et stabilise les variations.
 
-### Score
-À partir du prix attendu, on calcule :
-- un **écart normalisé** `z`,
-- puis un **score** décroissant quand le prix saisi s’éloigne du prix attendu.
+### Score & label
+- On estime un `prix_attendu` à partir des caractéristiques (surface, pièces).
+- On mesure l’écart relatif au marché local via un écart normalisé (avec **σ**).
+- Le score diminue quand on s’éloigne du prix attendu, et le label est basé sur le ratio :
+  - `underpriced` si ratio < 0.9
+  - `fair` si 0.9 ≤ ratio ≤ 1.1
+  - `overpriced` si ratio > 1.1
 
-Le label est déterminé à partir de seuils configurables par projet :
-- `underpriced` si le ratio est sous le seuil bas,
-- `fair` entre les deux seuils,
-- `overpriced` au-dessus du seuil haut.
-
----
-
-## Validation des entrées
-Les entrées sont validées via `validation.py`.
-
-Contrôles effectués :
-- surface > 0
-- nombre de pièces > 0
-- prix > 0
-- bornes minimales / maximales réalistes
-- cohérence du **prix au m²**
-
-Exemple de bornes pour `toulon-centre` :
-- surface : 9 à 300 m²
-- pièces : 1 à 10
-- prix : 20 000 à 3 000 000 €
-- prix/m² : 500 à 15 000 €/m²
-
-Ces bornes sont **configurables dans chaque projet** via `projects/<nom>/config.yaml`.
+### Robustesse statistique (intuition)
+Après filtrage, le modèle est entraîné sur **n = 124** ventes (Appartements).  
+Avec **n > 100**, on est dans un cadre où les estimations (moyennes/variabilité) deviennent généralement **stables** (intuition type **TCL**) : la dispersion `σ` est suffisamment informée pour normaliser les écarts de façon cohérente.
 
 ---
 
-## Endpoints API
+## Ce qui a été volontairement choisi de ne PAS faire
+### 1) Historisation des recherches
+- Pas de base de données
+- Pas d’ID de recherche / nom de recherche
+- Pas d’export Excel des historiques
 
-### `GET /projects`
-Liste les projets disponibles et indique le projet actif par défaut.
+> Amélioration possible : stocker les requêtes (ex: SQLite) avec un nom de recherche lié à un bien, et exporter en `.xlsx`.
 
-### `GET /info`
-Retourne les informations du projet sélectionné :
-- nom du projet,
-- localisation,
-- paramètres data,
-- version du modèle,
-- taille d’entraînement,
-- sigma,
-- type de bien.
+### 2) Hébergement en ligne
+- Pas de déploiement sur serveur (coût/ops)
+- Pas de serveur MCP
 
-Exemple :
-```text
-/info?project=toulon-centre
-```
-
-### `GET /score`
-Calcule le scoring du bien.
-
-Paramètres :
-- `surface`
-- `nb_room`
-- `price`
-- `project` (optionnel, sinon projet actif)
-
-Exemple :
-```text
-/score?surface=50&nb_room=2&price=180000&project=toulon-centre
-```
-
-### Documentation Swagger
-Une fois l’API lancée :
-```text
-http://127.0.0.1:8000/docs
-```
+> Amélioration possible : héberger l’application (container / cloud) pour garantir une disponibilité continue.
 
 ---
 
-## Interface web
-L’interface est servie par `ui.py` via `static/index.html`.
-
-Elle permet :
-- de saisir les caractéristiques du bien,
-- de choisir un projet via un dropdown,
-- d’afficher les résultats de scoring,
-- d’afficher les informations du projet courant.
-
-URL :
-```text
-http://127.0.0.1:8000/
-```
+## Structure du projet
+- `main.py` : API FastAPI
+- `ui.py` : route UI (`/`) qui sert `static/index.html`
+- `validation.py` : validation des inputs (HTTP 422)
+- `score.py` : inférence (score / label)
+- `model.py` : définition du modèle
+- `model_loader.py` : chargement du modèle
+- `project_config.py` : chargement de la configuration projet
+- `train_model.py` : entraînement/calibration (offline) → génère l’artifact modèle
+- `projects/` : projets configurés (ex. `toulon-centre/`)
+- `static/index.html` : interface utilisateur
+- `requirements.txt` : dépendances runtime API (**versionnées**)
+- `requirements-train.txt` : dépendances entraînement (**versionnées**)
+- `Dockerfile` : build & run container
 
 ---
 
-## Entraînement du modèle
-
-### Dépendances d’entraînement
-Les dépendances de training sont séparées du runtime :
-- `requirements.txt` : dépendances API/runtime
-- `requirements-train.txt` : dépendances entraînement
-
-Les versions sont **épinglées** pour garantir la reproductibilité.
-
-### Commandes
-Créer l’environnement :
-
+## Installation & exécution (local)
+### 1) Créer et activer l’environnement
 ```bash
 python -m venv .venv
-```
-
-Activation :
-```bash
-# Linux / macOS
-source .venv/bin/activate
-
-# Windows PowerShell
+# Windows
 .\.venv\Scripts\Activate.ps1
+# Linux/macOS
+source .venv/bin/activate
 ```
 
-Installer le runtime :
+### 2) Installer les dépendances API
 ```bash
 python -m pip install -r requirements.txt
 ```
 
-Installer le training :
+### 3) (Optionnel) Installer les dépendances training
 ```bash
 python -m pip install -r requirements-train.txt
 ```
 
-Lancer un entraînement sur le projet actif :
+### 4) Entraîner / recalibrer le modèle (offline)
 ```bash
 python train_model.py
 ```
 
-Lancer un entraînement sur un projet explicite :
-```bash
-python train_model.py --project toulon-centre
-```
-
-Utiliser un CSV explicite :
-```bash
-python train_model.py --project toulon-centre --csv /chemin/vers/fichier.csv
-```
-
-### Ce que fait `train_model.py`
-À chaque entraînement :
-1. lit le CSV DVF du projet,
-2. filtre `type_local`,
-3. entraîne le modèle,
-4. calcule `sigma`,
-5. génère une **version horodatée**,
-6. écrit :
-   - `model.json` (modèle actif),
-   - `model_<version>.json` (archive),
-   - `model_log.jsonl` (historique des runs).
-
-Cela permet :
-- de tracer les entraînements,
-- de comparer les versions,
-- de revenir à une version précédente.
-
----
-
-## Exécution en local
-
-Lancer l’API :
+### 5) Lancer l’API + UI
 ```bash
 python -m uvicorn main:app --reload --port 8000
 ```
 
-URLs utiles :
-- UI : `http://127.0.0.1:8000/`
-- Swagger : `http://127.0.0.1:8000/docs`
-- Projets : `http://127.0.0.1:8000/projects`
-- Infos : `http://127.0.0.1:8000/info`
-- Exemple scoring : `http://127.0.0.1:8000/score?surface=50&nb_room=2&price=180000`
+UI : http://127.0.0.1:8000/  
+Docs : http://127.0.0.1:8000/docs  
+API : http://127.0.0.1:8000/score?surface=50&nb_room=2&price=180000&project=toulon-centre
 
 ---
 
-## Docker
-
+## Docker (test)
 ### Build
 ```bash
-docker build -t immo-score .
+docker build -t fastapi-score .
 ```
 
 ### Run
 ```bash
-docker run --rm -p 8001:8000 immo-score
+docker run --rm -p 8001:8000 fastapi-score
 ```
 
-### Run avec projet actif explicite
-```bash
-docker run --rm -p 8001:8000 -e ACTIVE_PROJECT=toulon-centre immo-score
-```
-
-L’image Docker :
-- installe uniquement les dépendances runtime,
-- embarque le code, la configuration, les projets et l’UI,
-- vérifie au build que le **modèle du projet actif** est bien lisible.
-
-Accès :
-- UI : `http://127.0.0.1:8001/`
-- Docs : `http://127.0.0.1:8001/docs`
-
+UI : http://127.0.0.1:8001/  
+Docs : http://127.0.0.1:8001/docs
 ---
 
-## Cycle de vie MLOps
+## Cycle de vie du projet
+Dans cette version, la mini-plateforme couvre déjà plusieurs étapes utiles :
+- **entraînement offline** du modèle,
+- **persistance** de l’artifact,
+- **serving** via API/UI,
+- **conteneurisation Docker**,
+- **versionnement** des dépendances.
 
-### 1. Configuration
-Un nouveau cas d’usage se matérialise par un nouveau dossier de projet :
-- config,
-- données,
-- modèle.
-
-### 2. Entraînement
-Le modèle est recalculé via `train_model.py`.
-
-### 3. Versioning
-Chaque run est historisé :
-- artifact actif,
-- artifacts versionnés,
-- journal JSONL.
-
-### 4. Serving
-L’API FastAPI charge les projets disponibles au démarrage et expose les endpoints de scoring.
-
-### 5. Déploiement
-Le service peut être packagé et déployé via Docker sur :
-- une VM,
-- un service managé type Cloud Run / App Runner / Container Apps,
-- une CI/CD qui rebuild l’image à chaque mise à jour.
-
-### 6. Transition de version
-Pour promouvoir une nouvelle version :
-1. réentraîner,
-2. valider les métriques,
-3. redéployer.
-
-En cas de problème, un rollback simple consiste à remettre un ancien `model_<version>.json` en `model.json`.
-
-### 7. Améliorations futures
-Quelques prolongements naturels :
-- endpoint `/health`,
-- tests automatiques de non-régression,
-- CI/CD,
-- monitoring des requêtes,
-- détection de dérive de données,
-- promotion automatisée d’un modèle après validation.
-
----
-
-## Limitations actuelles et volontaires: 
-- Les projets sont chargés au démarrage de l’application : ajouter un nouveau projet nécessite de **redémarrer** l’API.
-- Un projet correspond à **un seul modèle actif** à la fois.
-- Un projet entraîne actuellement **un seul `type_local`** à la fois.
-- Le scoring est très léger, mais l’entraînement dépend de la taille du CSV.
-- L’actualisation des données DVF et le réentraînement restent **manuels**.
-
----
-
-## Arborescence
-```text
-.
-├── config.yaml
-├── main.py
-├── model.py
-├── model_loader.py
-├── project_config.py
-├── score.py
-├── train_model.py
-├── ui.py
-├── validation.py
-├── requirements.txt
-├── requirements-train.txt
-├── Dockerfile
-├── static/
-│   └── index.html
-└── projects/
-    └── toulon-centre/
-        ├── config.yaml
-        ├── model.json
-        └── Base_DVF_Toulon.csv
-```
+Améliorations futures possibles :
+- déploiement continu pour garder le service disponible,
+- gestion plus avancée des versions de modèles,
+- monitoring et journalisation des usages.
 
 ---
 
 ## Auteur
 Créé par **Lolita ABOA**.
 
-Profil :
-https://lolitadiamant.wixsite.com/data-en-herbe
+Projet de démonstration : **Toulon centre-ville**.  
+Profil : https://lolitadiamant.wixsite.com/data-en-herbe
